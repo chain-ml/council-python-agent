@@ -91,10 +91,7 @@ class AgentApp:
         """
         Optionally define the code_header.
         """
-        code_header = """```python
-        import pandas as pd
-        import numpy as np
-        ```"""
+        code_header = ""
 
         """
         Initial code generation.
@@ -184,7 +181,7 @@ class AgentApp:
 
         self.general_chain = Chain(
             name="general",
-            description="Answer general questions without the use of any specialized skills. Use this when the user needs the answer to a question that doesn't require any coding.",
+            description="Respond to the human user using natural language. Use this when you want to ask the user a follow-up question or just continue the dialogue with natural language.",
             runners=[self.general_skill],
         )
 
@@ -192,7 +189,9 @@ class AgentApp:
         self.controller = LLMInstructController(
             llm=self.llm,
             top_k_execution_plan=1,
-            hints=[],
+            hints=[
+                "If you're not completely sure how best to help the user, use the 'general' chain to ask for more input."
+            ],
         )
 
     def init_evaluator(self):

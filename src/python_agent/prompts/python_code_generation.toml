@@ -1,6 +1,6 @@
 [system]
 prompt = """
-You are an expert-level Python coder with specific expertise using Pandas and NumPy.
+You are an expert-level Python coder.
 """
 
 [main]
