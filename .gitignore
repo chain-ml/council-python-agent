@@ -1,0 +1,6 @@
+**/.conda
+.env
+**/src/python_agent/code_sandbox
+**/.vscode
+**/src/python_agent/__pycache__
+.DS_Store

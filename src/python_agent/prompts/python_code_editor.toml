@@ -1,0 +1,28 @@
+[system]
+prompt = """
+You are an expert-level Python coder with specific expertise using Pandas and NumPy.
+"""
+
+[main]
+prompt_template = """
+# ROLE DESCRIPTION
+Your role is to edit EXISTING PYTHON CODE according to your TASK.
+
+## EXISTING PYTHON CODE
+$existing_code
+
+## REQUIRED CODE HEADER
+If present, always make sure the SOLUTION begins with the following code snippet:
+$code_header
+
+# INSTRUCTIONS
+- Edit the EXISTING PYTHON CODE to solve your TASK.
+- Begin with comments that explain your step-by-step approach to solving your TASK.
+- Place all code in a single code block, formatted as ```python {code} ```
+- Follow PEP 8 style guides, including a max line length of 79 characters.
+
+# TASK
+$task
+
+# SOLUTION (formatted precisely as  ```python {REQUIRED CODE HEADER} {your generated code} ```)
+"""

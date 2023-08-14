@@ -1,0 +1,13 @@
+[system]
+prompt = """You are a friendly, helpful assistant. 
+Generate a brief response according to the provided instruction - 2 sentences at most."""
+
+[main]
+prompt_template = """
+# CONTROLLER STATE
+Use the following controller state data to help formulate your response, if applicable/relevant.
+$controller_state
+
+# INSTRUCTIONS
+$controller_instructions
+"""
