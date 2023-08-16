@@ -8,7 +8,7 @@ logging.getLogger("council").setLevel("INFO")
 import time
 
 def main(test_case=None):
-    agent_app = AgentApp()
+    agent_app = AgentApp(work_dir="./src/python_agent")
     agent_app.controller._state["code"] = None
     agent_app.controller._state["stderr"] = None
 

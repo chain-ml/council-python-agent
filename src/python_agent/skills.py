@@ -37,52 +37,8 @@ class PythonCodeGenerationSkill(SkillBase):
 
         prompt = self.main_prompt_template.substitute(
             code_header=self.code_header,
-            task=context.last_message.message,
-        )
-
-        messages_to_llm = [
-            self.system_prompt,
-            LLMMessage.assistant_message(prompt),
-        ]
-
-        llm_response = self.llm.post_chat_request(messages=messages_to_llm).first_choice
-
-        logger.debug(f"{self.name}, generated code: {llm_response}")
-
-        return ChatMessage.skill(
-            source=self.name,
-            message="I've edited code for you and placed the result in the 'data' field.",
-            data=context.last_message.data | {"code": llm_response},
-        )
-
-
-class PythonCodeEditorSkill(SkillBase):
-    """Specialized skill to edit existing Python code."""
-
-    def __init__(
-        self,
-        llm: LLMBase,
-        system_prompt: str,
-        main_prompt_template: Template,
-        code_header: str,
-    ):
-        """Build a new PythonCodeEditorSkill."""
-
-        super().__init__(name="PythonCodeEditorSkill")
-        self.llm = llm
-        self.system_prompt = LLMMessage.system_message(system_prompt)
-        self.main_prompt_template = main_prompt_template
-        self.code_header = code_header
-
-    def execute(self, context: ChainContext, _budget: Budget) -> ChatMessage:
-        """Execute `PythonCodeEditorSkill`."""
-
-        # Get the code
-        code = context.last_message.data["code"]
-
-        prompt = self.main_prompt_template.substitute(
-            existing_code=code,
-            code_header=self.code_header,
+            existing_code=context.last_message.data["code"],
+            user_message=context.last_user_message.message,
             task=context.last_message.message,
         )
 
@@ -114,7 +70,7 @@ class ParsePythonSkill(SkillBase):
             ast.parse(code)
             return ChatMessage.skill(
                 source=self.name,
-                message="Parsing succeded.",
+                message="The code is ready, do you want to run it?",
                 data=context.last_message.data | {"code": code},
             )
         except SyntaxError:
@@ -126,14 +82,14 @@ class ParsePythonSkill(SkillBase):
             python_code = None
             for match in matches:
                 python_code = match
-            message = "Parsing succeeded."
+            message = "The code is ready, do you want to run it?"
             return ChatMessage.skill(
                 source=self.name,
                 message=message,
                 data=context.last_message.data | {"code": python_code},
             )
         else:
-            message = "Parsing failed."
+            message = "Sorry, something went wrong and the code doesn't parse... Do you want me to try to fix it?"
             return ChatMessage.skill(
                 source=self.name,
                 message=message,
@@ -177,6 +133,7 @@ class PythonErrorCorrectionSkill(SkillBase):
             existing_code=code,
             code_header=self.code_header,
             errors=errors,
+            user_message=context.last_user_message.message,
         )
         logger.debug(f"{self.name}, prompt {prompt}")
 
@@ -201,7 +158,6 @@ class PythonErrorCorrectionSkill(SkillBase):
             source=self.name,
             is_error=False,
         )
-
 
 class PythonExecutionSkill(SkillBase):
     def __init__(
@@ -241,7 +197,7 @@ class PythonExecutionSkill(SkillBase):
                     python_code = match
                 code = python_code
             else:
-                message = "Parsing failed."
+                message = "Sorry, something went wrong and the code doesn't parse..."
                 logger.debug(f"{self.name}, failed to parse code: {code}")
                 return ChatMessage.skill(
                     source=self.name,
@@ -262,7 +218,7 @@ class PythonExecutionSkill(SkillBase):
             }
             if exec_result["returncode"] == 0:
                 logger.debug(f"{self.name}, executed code: {data}")
-                message_to_user = data["stdout"].strip()
+                message_to_user = f"The code executed successfully with standard output: {data['stdout'].strip()}"
                 if len(message_to_user) < 1:
                     message_to_user = (
                         "Python code executed successfully with no standard output."
@@ -274,7 +230,7 @@ class PythonExecutionSkill(SkillBase):
                 logger.debug(f"{self.name}, failed to execute code: {data}")
                 return ChatMessage.skill(
                     source=self.name,
-                    message=f"Python code execution failed. There was an error: {data['stderr']}",
+                    message=f"Python code execution failed. There was an error: {data['stderr'][:100]}... Do you want me to try to fix it?",
                     data=data,
                     is_error=True,
                 )
@@ -327,5 +283,28 @@ class GeneralSkill(SkillBase):
         return ChatMessage.skill(
             source=self.name,
             message=llm_response,
+            data=context.last_message.data,
+        )
+
+class DirectToUserSkill(SkillBase):
+    """Just send a message to the user."""
+
+    def __init__(
+        self,
+    ):
+        """Build a new DirectToUserSkill."""
+
+        super().__init__(name="DirectToUserSkill")
+
+    def execute(self, context: ChainContext, _budget: Budget) -> ChatMessage:
+        """Execute `DirectToUserSkill`."""
+
+        message = context.last_message.message
+
+        logger.debug(f"{self.name}, response: {message}")
+
+        return ChatMessage.skill(
+            source=self.name,
+            message=message,
             data=context.last_message.data,
         )

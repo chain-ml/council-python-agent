@@ -58,11 +58,13 @@ class LLMInstructController(ControllerBase):
         conversation_history = [f"{m.kind}: {m.message}" for m in context.chatHistory.messages]
 
         system_message = """
-        You are the Controller module for an AI assistant. Your role is to control the execution flow by selecting and invoking chains with relevant instructions using natural language."""
+        You are the Controller module for an AI assistant. 
+        Your role is to control the execution flow by selecting and invoking chains with relevant instructions using natural language."""
 
         main_prompt_template = Template("""
         # TASK DESCRIPTION
-        Your task is to decide which Chain is better suited to handling the USER MESSAGE and to provide natural language instructions to the selected chain.
+        Your task is to decide which Chain is better suited to handling the USER MESSAGE 
+        and to provide natural language instructions to the selected chain.
         Consider the information in CONTROLLER STATE as you make your decision.
 
         # INSTRUCTIONS

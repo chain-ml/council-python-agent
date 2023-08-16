@@ -6,6 +6,7 @@ from python_agent.agent import AgentApp
 import traceback
 import logging
 import time
+import datetime
 
 logging.basicConfig(
     format="[%(asctime)s %(levelname)s %(threadName)s %(name)s:%(funcName)s:%(lineno)s] %(message)s",
@@ -25,15 +26,15 @@ logger.setLevel(logging.DEBUG)
 class MemoryHandler(logging.Handler):
     def __init__(self):
         super().__init__()
-        self.latest_log_message = None
+        self.latest_log_message = ""
         self.latest_output = ""
 
     def emit(self, record):
         log_message = self.format(record)
+        current_datetime = datetime.datetime.now()
+        formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
         if "Controller Message" in log_message:
-            self.latest_log_message = log_message
-        if "agent execution ended" in log_message:
-            self.latest_log_message = self.latest_output
+            self.latest_log_message += "|" + f"[{formatted_datetime}] " + log_message
 
 
 memory_handler = MemoryHandler()
@@ -47,8 +48,8 @@ def get_latest_log_stream():
         while True:
             memory_handler.latest_log_message
             if memory_handler.latest_log_message:
-                if "Controller Message" in memory_handler.latest_log_message:
-                    memory_handler.latest_log_message += "."
+                # if "Controller Message" in memory_handler.latest_log_message:
+                # memory_handler.latest_log_message += "."
                 yield f"data: {memory_handler.latest_log_message}\n\n"
             time.sleep(1)
 
@@ -56,7 +57,7 @@ def get_latest_log_stream():
 
 
 @app.route("/get_code")
-def serve_code():
+def get_code():
     if "code" in agent_app.controller._state:
         return agent_app.controller._state["code"], 200
     else:
@@ -85,25 +86,6 @@ def post_code():
         return "Code was not posted", 500
 
 
-# @app.route("/execute", methods=["POST"])
-# def execute_code():
-#     code = request.form.get("code")
-#     agent_app.controller._state["code"] = code
-#     try:
-#         # Run the Python code as a subprocess
-#         execution = run(["python", "-c", code], capture_output=True)
-#         data = {
-#             "stdout": execution.stdout.decode(),
-#             "stderr": execution.stderr.decode(),
-#         }
-#         if execution.returncode == 0:
-#             return data, 200
-#         else:
-#             return data, 404
-#     except Exception as e:
-#         return e, 500
-
-
 @app.route("/handle_user_message", methods=["POST"])
 def handle_user_message():
     try:
@@ -117,6 +99,11 @@ def handle_user_message():
         print(traceback.format_exc())
         return "Sorry, something went wrong!", 500
 
+@app.route("/revert_code", methods=['POST'])
+def revert_code():
+    code = agent_app.revert_code()
+    agent_message = agent_app.context.chatHistory.last_agent_message.message
+    return {"message": agent_message, "code": code}, 200 
 
 if __name__ == "__main__":
     agent_app = AgentApp()

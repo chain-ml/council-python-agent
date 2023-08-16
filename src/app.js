@@ -22,23 +22,25 @@ document.addEventListener('DOMContentLoaded', function () {
   })
 
   // Event listener for executing the code
-  function executeCode() {
-    var code = editor.getValue(); // Assuming you have an initialized CodeMirror editor
+  function revertCode() {
 
-    fetch('http://127.0.0.1:5000/execute', {
+    fetch('http://127.0.0.1:5000/revert_code', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: 'code=' + encodeURIComponent(code)
     })
-      .then(response => response.text())
+      .then(response => response.json())
       .then(result => {
-        console.log('Code executed:', result);
+        console.log('Code reverted:', result['code']);
         // Handle the response/result as needed
+        editor.setValue(result['code']);
+        if ('message' in result){
+          addMessage(result['message'], false)
+        }
       })
       .catch(error => {
-        console.error('Error executing code:', error);
+        console.error('Error reverting code:', error);
         // Handle the error
       });
   }
@@ -85,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Attach event listeners
-  // document.getElementById("executeButton").addEventListener("click", executeCode);
+  document.getElementById("revertButton").addEventListener("click", revertCode);
   // document.getElementById("refreshButton").addEventListener("click", clearCode);
   reloadOnChange();
 
@@ -174,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   logsSource.onmessage = function (event) {
     // Update the UI with the latest log message
-    const latestLogMessage = event.data;
+    var latestLogMessage = event.data.split('|').join('\n');
     console.log(latestLogMessage);
     // Process the latest log message as needed
     logs_console.setValue(latestLogMessage);

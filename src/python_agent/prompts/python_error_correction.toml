@@ -24,7 +24,12 @@ $code_header
 - Place all code in a single code block, formatted as ```python {code} ```
 - Follow PEP 8 style guides, including a max line length of 79 characters.
 
+# USER MESSAGE
+The following is the user's most recent message, unedited.
+$user_message
+
 # TASK
+The following is your task, as determined by your Controller.
 $task
 
 # SOLUTION (formatted precisely as  ```python {REQUIRED CODE HEADER} {your generated code} ```)

@@ -18,21 +18,20 @@ logging.getLogger("council")
 
 from python_agent.skills import (
     PythonCodeGenerationSkill,
-    PythonCodeEditorSkill,
     ParsePythonSkill,
     PythonExecutionSkill,
     PythonErrorCorrectionSkill,
     GeneralSkill,
+    DirectToUserSkill,
 )
 from python_agent.controller import LLMInstructController
 from python_agent.evaluator import BasicEvaluatorWithSource
 from python_agent.llm_fallback import LLMFallback
 
-work_dir = "./python_agent"
-
 
 class AgentApp:
-    def __init__(self):
+    def __init__(self, work_dir="./python_agent"):
+        self.work_dir = work_dir
         self.context = AgentContext(chat_history=ChatHistory())
         self.llm = LLMFallback(
             OpenAILLM.from_env(), AzureLLM.from_env(), retry_before_fallback=1
@@ -44,45 +43,37 @@ class AgentApp:
         self.init_evaluator()
         self.init_agent()
 
+        self.state_history = []
+
     def load_prompts(self):
         # Load prompts and prompt templates
 
         self.code_generation_system_message = toml.load(
-            f"{work_dir}/prompts/python_code_generation.toml"
+            f"{self.work_dir}/prompts/python_code_generation.toml"
         )["system"]["prompt"]
 
         self.code_generation_prompt_template = Template(
-            toml.load(f"{work_dir}/prompts/python_code_generation.toml")["main"][
-                "prompt_template"
-            ]
-        )
-
-        self.code_editor_system_message = toml.load(
-            f"{work_dir}/prompts/python_code_editor.toml"
-        )["system"]["prompt"]
-
-        self.code_editor_prompt_template = Template(
-            toml.load(f"{work_dir}/prompts/python_code_editor.toml")["main"][
+            toml.load(f"{self.work_dir}/prompts/python_code_generation.toml")["main"][
                 "prompt_template"
             ]
         )
 
         self.code_correction_system_message = toml.load(
-            f"{work_dir}/prompts/python_error_correction.toml"
+            f"{self.work_dir}/prompts/python_error_correction.toml"
         )["system"]["prompt"]
 
         self.code_correction_prompt_template = Template(
-            toml.load(f"{work_dir}/prompts/python_error_correction.toml")["main"][
+            toml.load(f"{self.work_dir}/prompts/python_error_correction.toml")["main"][
                 "prompt_template"
             ]
         )
 
-        self.general_system_message = toml.load(f"{work_dir}/prompts/general.toml")[
-            "system"
-        ]["prompt"]
+        self.general_system_message = toml.load(
+            f"{self.work_dir}/prompts/general.toml"
+        )["system"]["prompt"]
 
         self.general_prompt_template = Template(
-            toml.load(f"{work_dir}/prompts/general.toml")["main"][
+            toml.load(f"{self.work_dir}/prompts/general.toml")["main"][
                 "prompt_template"
             ]
         )
@@ -94,22 +85,12 @@ class AgentApp:
         code_header = ""
 
         """
-        Initial code generation.
+        Code generation.
         """
         self.code_generation_skill = PythonCodeGenerationSkill(
             self.llm,
             system_prompt=self.code_generation_system_message,
             main_prompt_template=self.code_generation_prompt_template,
-            code_header=code_header,
-        )
-
-        """
-        Python code editing skill.
-        """
-        self.code_editing_skill = PythonCodeEditorSkill(
-            self.llm,
-            system_prompt=self.code_editor_system_message,
-            main_prompt_template=self.code_editor_prompt_template,
             code_header=code_header,
         )
 
@@ -142,31 +123,27 @@ class AgentApp:
         self.general_skill = GeneralSkill(
             self.llm,
             system_prompt=self.general_system_message,
-            main_prompt_template=self.general_prompt_template
+            main_prompt_template=self.general_prompt_template,
         )
+
+        """
+        A skill that the Controller can use to just send a message to the user with no additional LLM calls.
+        """
+        self.direct_to_user_skill = DirectToUserSkill()
 
     def init_chains(self):
         self.code_generation_chain = Chain(
             name="code_generation_chain",
-            description="Generate a new Python script. Use this chain when the user wants to write a new Python script.",
+            description="Generate or edit Python code. If you intend to edit existing code, give an instruction to edit EXISTING CODE.",
             runners=[
                 self.code_generation_skill,
                 self.parse_python_skill,
             ],
         )
 
-        self.code_editing_chain = Chain(
-            name="code_editing_chain",
-            description="Edit an existing Python script. Use this when the user wants to make changes to the existing Python code.",
-            runners=[
-                self.code_editing_skill,
-                self.parse_python_skill,
-            ],
-        )
-
         self.code_execution_chain = Chain(
             name="code_execution_chain",
-            description="Execute the script. Use this when the user just wants to run the code (without edits).",
+            description="Execute the script. Use this when the user wants to run the code.",
             runners=[
                 self.parse_python_skill,
                 self.python_execution_skill,
@@ -181,8 +158,14 @@ class AgentApp:
 
         self.general_chain = Chain(
             name="general",
-            description="Respond to the human user using natural language. Use this when you want to ask the user a follow-up question or just continue the dialogue with natural language.",
+            description="Answer general questions and handle general requests using natural language. Use this when you want to generate a natural language question or response for the user.",
             runners=[self.general_skill],
+        )
+
+        self.direct_to_user_chain = Chain(
+            name="direct_to_user",
+            description="Send a message directly to the user. Use this chain when you're able to respond to the user direclty. Use the 'instructions' part of your response to send a helpful message directly to the user.",
+            runners=[self.direct_to_user_skill],
         )
 
     def init_controller(self):
@@ -190,7 +173,10 @@ class AgentApp:
             llm=self.llm,
             top_k_execution_plan=1,
             hints=[
-                "If you're not completely sure how best to help the user, use the 'general' chain to ask for more input."
+                # "If the user is asking a question, you should almost always select 'general' to answer it, unless the question is very clearly asking for code to be generated.",
+                # "If you're not completely sure how best to help the user, use the 'general' chain to ask for more input.",
+                # "Try to be convertional with the user. If they are asking for specific code changes, use the 'code_generation_skill', but if the user is asking any other kind of question, please answer it using the 'general' chain."
+                "When you use the 'direct_to_user' chain, use the 'instructions' part of your response to communicate naturally with the user. You're not actually giving instructions, but using that part of the response to have a dialogue."
             ],
         )
 
@@ -202,17 +188,39 @@ class AgentApp:
             controller=self.controller,
             chains=[
                 self.code_generation_chain,
-                self.code_editing_chain,
                 self.code_execution_chain,
                 self.error_correction_chain,
                 self.general_chain,
+                # self.direct_to_user_chain,
             ],
             evaluator=self.evaluator,
         )
 
+    def revert_code(self):
+        if len(self.state_history) > 1:
+            code = self.state_history.pop()["code"]
+            self.context.chatHistory.add_agent_message(
+                message="I've reverted the code as per your request.",
+            )
+            return code
+        elif len(self.state_history) > 0:
+            self.state_history.pop()
+            self.context.chatHistory.add_agent_message(
+                message="I've reverted the code as per your request.",
+            )
+            return "No code to display."
+        else:
+            self.context.chatHistory.add_agent_message(
+                message="Sorry, I couldn't revert the code any further.",
+            )
+            return "No code to display."
+
     def interact(self, message, budget=600):
         self.context.chatHistory.add_user_message(message)
+        state_pre = self.agent.controller._state.copy()
         result = self.agent.execute(context=self.context, budget=Budget(budget))
+        if self.agent.controller._state["code"] != state_pre["code"]:
+            self.state_history.append(state_pre)
         last_message = result.messages[-1].message
         self.context.chatHistory.add_agent_message(
             last_message.message, last_message.data
