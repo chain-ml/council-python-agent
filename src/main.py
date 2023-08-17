@@ -52,4 +52,11 @@ if __name__ == "__main__":
         "run the code",
     ]
 
+    test_case = [
+        "I want to create a virtual pet cat in pygame",
+        "run it",
+        "make the cat look nicer",
+        "run it"
+    ]
+
     main(test_case)

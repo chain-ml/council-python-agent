@@ -82,7 +82,7 @@ class AgentApp:
         """
         Optionally define the code_header.
         """
-        code_header = ""
+        code_header = """"""
 
         """
         Code generation.
@@ -158,13 +158,13 @@ class AgentApp:
 
         self.general_chain = Chain(
             name="general",
-            description="Answer general questions and handle general requests using natural language. Use this when you want to generate a natural language question or response for the user.",
+            description="Use this to use the instructions part of your response to give instructions about how to generate a response.",
             runners=[self.general_skill],
         )
 
         self.direct_to_user_chain = Chain(
             name="direct_to_user",
-            description="Send a message directly to the user. Use this chain when you're able to respond to the user direclty. Use the 'instructions' part of your response to send a helpful message directly to the user.",
+            description="Use this to use the message part of your response to just send a message directly to the user.",
             runners=[self.direct_to_user_skill],
         )
 
@@ -173,10 +173,7 @@ class AgentApp:
             llm=self.llm,
             top_k_execution_plan=1,
             hints=[
-                # "If the user is asking a question, you should almost always select 'general' to answer it, unless the question is very clearly asking for code to be generated.",
-                # "If you're not completely sure how best to help the user, use the 'general' chain to ask for more input.",
-                # "Try to be convertional with the user. If they are asking for specific code changes, use the 'code_generation_skill', but if the user is asking any other kind of question, please answer it using the 'general' chain."
-                "When you use the 'direct_to_user' chain, use the 'instructions' part of your response to communicate naturally with the user. You're not actually giving instructions, but using that part of the response to have a dialogue."
+                "When you use the 'direct_to_user' chain, don't respond with instructions, but instead respond with a message that directly addresses the user."
             ],
         )
 
@@ -191,7 +188,7 @@ class AgentApp:
                 self.code_execution_chain,
                 self.error_correction_chain,
                 self.general_chain,
-                # self.direct_to_user_chain,
+                self.direct_to_user_chain,
             ],
             evaluator=self.evaluator,
         )
@@ -221,7 +218,7 @@ class AgentApp:
         result = self.agent.execute(context=self.context, budget=Budget(budget))
         if self.agent.controller._state["code"] != state_pre["code"]:
             self.state_history.append(state_pre)
-        last_message = result.messages[-1].message
-        self.context.chatHistory.add_agent_message(
-            last_message.message, last_message.data
-        )
+        for scored_message in result.messages:
+            self.context.chatHistory.add_agent_message(
+                scored_message.message.message, scored_message.message.data
+            )

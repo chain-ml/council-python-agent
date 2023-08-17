@@ -64,7 +64,7 @@ class LLMInstructController(ControllerBase):
         main_prompt_template = Template("""
         # TASK DESCRIPTION
         Your task is to decide which Chain is better suited to handling the USER MESSAGE 
-        and to provide natural language instructions to the selected chain.
+        and to provide a natural language message or instructions to the selected chain.
         Consider the information in CONTROLLER STATE as you make your decision.
 
         # INSTRUCTIONS
@@ -72,7 +72,7 @@ class LLMInstructController(ControllerBase):
         $chain_details
 
         - Select exactly one chain, assign a score out of 10 based on your confidence, and give the chain instructions that will best address the USER MESSAGE
-        - You will answer with {name};{integer score between 0 and 10};{natural language instructions for the selected chain on a single line}
+        - You will answer with {name};{integer score between 0 and 10};{natural language message or instructions for the selected chain on a single line}
         - You must ensure that your generated instructions are all on a single line
         - When no category is relevant, you will answer exactly with 'unknown'
 
@@ -88,7 +88,7 @@ class LLMInstructController(ControllerBase):
         # USER MESSAGE
         $user_message
 
-        # Controller Decision (formatted precisely as {name};{integer score between 0 and 10};{natural language instructions for the selected chain on a single line})
+        # Controller Decision (formatted precisely as {name};{integer score between 0 and 10};{natural language message or instructions for the selected chain on a single line})
         """)
 
         main_prompt = main_prompt_template.substitute(

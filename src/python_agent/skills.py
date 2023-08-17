@@ -73,7 +73,7 @@ class ParsePythonSkill(SkillBase):
                 message="The code is ready, do you want to run it?",
                 data=context.last_message.data | {"code": code},
             )
-        except SyntaxError:
+        except (SyntaxError, TypeError):
             pass
 
         pattern = r"```python\s+(.*?)\s+```"
@@ -93,7 +93,7 @@ class ParsePythonSkill(SkillBase):
             return ChatMessage.skill(
                 source=self.name,
                 message=message,
-                data=context.last_message.data | {"code": python_code},
+                data=context.last_message.data | {"code": code},
                 is_error=True,
             )
 
