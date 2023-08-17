@@ -19,7 +19,19 @@ document.addEventListener('DOMContentLoaded', function () {
       'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: ''
+  }).then(result => {
+    fetch('http://127.0.0.1:5000/get_code', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+    }).then(response => response.text())
+      .then(result => {
+        editor.setValue(result)
+      }
+      )
   })
+
 
   // Event listener for executing the code
   function revertCode() {
@@ -35,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log('Code reverted:', result['code']);
         // Handle the response/result as needed
         editor.setValue(result['code']);
-        if ('message' in result){
+        if ('message' in result) {
           addMessage(result['message'], false)
         }
       })
@@ -45,51 +57,8 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-
-  // Event listener for automatic reloading on file change
-  function reloadOnChange() {
-    var fileUrl = 'http://127.0.0.1:5000/get_code';  // Replace with the URL of your file on the server
-
-    var xhr = new XMLHttpRequest();
-    xhr.onload = function () {
-      if (xhr.status === 200) {
-        var fileContent = xhr.responseText;
-        editor.setValue(fileContent);
-      }
-    };
-
-    xhr.open('GET', fileUrl, true);
-    xhr.send();
-  }
-
-  function clearCode() {
-    // Post the code in the editor to the server first
-    var code = '';
-    editor.setValue(code)
-
-    fetch('http://127.0.0.1:5000/post_code', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: 'code=' + encodeURIComponent(code)
-    })
-      .then(response => response.text())
-      .then(result => {
-        console.log('Code executed:', result);
-        // Handle the response/result as needed
-      })
-      .catch(error => {
-        console.error('Error executing code:', error);
-        // Handle the error
-      });
-
-  }
-
   // Attach event listeners
   document.getElementById("revertButton").addEventListener("click", revertCode);
-  // document.getElementById("refreshButton").addEventListener("click", clearCode);
-  reloadOnChange();
 
   var chatContainer = document.getElementById('chatContainer');
   var messageInput = document.getElementById('messageInput');

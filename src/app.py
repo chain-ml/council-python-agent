@@ -56,7 +56,7 @@ def get_latest_log_stream():
     return Response(generate_log_updates(), content_type="text/event-stream")
 
 
-@app.route("/get_code")
+@app.route("/get_code", methods=["POST"])
 def get_code():
     if "code" in agent_app.controller._state:
         return agent_app.controller._state["code"], 200
@@ -68,7 +68,7 @@ def get_code():
 def reset():
     global agent_app
     agent_app = AgentApp()
-    agent_app.controller._state["code"] = None
+    agent_app.controller._state["code"] = "No code to display."
     memory_handler.latest_log_message = "Ready."
     return "Ready!", 200
 
