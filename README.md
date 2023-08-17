@@ -5,6 +5,13 @@ A general purpose interative Python coding assistant implemented with Council. R
 There is a custom controller, which is a development version of `LLMInstructController`
 - `src/python_agent/controller.py`
 
+## Demo Video and Files
+
+If you just want to see how this Agent works, check out the following video where we use the Python Agent to help build a particle simulator!
+
+- 📺 [Using the Python Agent to Create a Particle Simulator](https://drive.google.com/file/d/1kBJI16O670E-GeQA3AeXuJACsQHdQp7N/view?usp=sharing)
+- 📄 [Demo Code and Transcripts](./demo_files/)
+
 ## Prerequisites
 
 To run the demo as-is, you'll need an [OpenAI API Key](https://platform.openai.com/account/org-settings). We also support the use of an Azure-based fallback LLM using gpt-3.5-turbo, but we highly recommend using GPT-4 for this demo. 
