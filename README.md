@@ -9,7 +9,7 @@ There is a custom controller, which is a development version of `LLMInstructCont
 
 If you just want to see how this Agent works, check out the following video where we use the Python Agent to help build a particle simulator!
 
-- 📺 [Using the Python Agent to Create a Particle Simulator](https://drive.google.com/file/d/1kBJI16O670E-GeQA3AeXuJACsQHdQp7N/view?usp=sharing)
+- 📺 [Using the Python Agent to Create a Particle Simulator](https://drive.google.com/open?id=1kBgt-bM9tcOuVD59npUxgy8TdHyDO598&usp=drive_fs)
 - 📄 [Demo Code and Transcripts](./demo_files/)
 
 ## Prerequisites
