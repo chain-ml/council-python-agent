@@ -14,6 +14,98 @@ from typing import List, Dict
 logger = logging.getLogger("council")
 
 
+class FredDataSpecialist(SkillBase):
+    """Specialized skill to retrieve data from FRED."""
+
+    def __init__(
+        self,
+        llm: LLMBase,
+        system_prompt: str,
+        main_prompt_template: Template,
+        code_header: str,
+    ):
+        """Build a new FredDataSpecialist."""
+
+        super().__init__(name="FredDataSpecialist")
+        self.llm = llm
+        self.system_prompt = LLMMessage.system_message(system_prompt)
+        self.main_prompt_template = main_prompt_template
+        self.code_header = code_header
+
+    def execute(self, context: ChainContext, _budget: Budget) -> ChatMessage:
+        """Execute `FredDataSpecialist`."""
+        
+        # Get the code
+        code = context.last_message.data['code']
+
+        main_prompt = self.main_prompt_template.substitute(
+            code_header=self.code_header,
+            task=context.last_message.message,
+            existing_code=code,
+        )
+
+        messages_to_llm = [
+            self.system_prompt,
+            LLMMessage.assistant_message(
+                main_prompt
+            ),
+        ]
+
+        llm_response = self.llm.post_chat_request(messages=messages_to_llm).first_choice
+
+        logger.debug(f"{self.name}, generated code: {llm_response}")
+
+        return ChatMessage.skill(
+            source=self.name,
+            message="I've generated code for you and placed it in the 'data' field.",
+            data= context.last_message.data | {'code': llm_response},
+        )
+
+
+class FredDataScientistSkill(SkillBase):
+    """FredDataScientistSkill."""
+
+    def __init__(
+        self,
+        llm: LLMBase,
+        system_prompt: str,
+        main_prompt_template: Template,
+        code_header: str,
+    ):
+        """Build a new FredDataScientistSkill."""
+
+        super().__init__(name="FredDataScientistSkill")
+        self.llm = llm
+        self.system_prompt = LLMMessage.system_message(system_prompt)
+        self.main_prompt_template = main_prompt_template
+        self.code_header = code_header
+
+    def execute(self, context: ChainContext, _budget: Budget) -> ChatMessage:
+        """Execute `FredDataScientistSkill`."""
+
+        prompt = self.main_prompt_template.substitute(
+            code_header=self.code_header,
+            existing_code=context.last_message.data["code"],
+            user_message=context.last_user_message.message,
+            task=context.last_message.message,
+        )
+
+        messages_to_llm = [
+            self.system_prompt,
+            LLMMessage.assistant_message(prompt),
+        ]
+
+        llm_response = self.llm.post_chat_request(messages=messages_to_llm).first_choice
+
+        logger.debug(f"{self.name}, generated code: {llm_response}")
+
+        return ChatMessage.skill(
+            source=self.name,
+            message="I've edited code for you and placed the result in the 'data' field.",
+            data=context.last_message.data | {"code": llm_response},
+        )
+
+
 class PythonCodeGenerationSkill(SkillBase):
     """General Python code generation skill."""
 

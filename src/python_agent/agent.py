@@ -17,6 +17,8 @@ import os
 logging.getLogger("council")
 
 from python_agent.skills import (
+    FredDataSpecialist,
+    FredDataScientistSkill,
     PythonCodeGenerationSkill,
     ParsePythonSkill,
     PythonExecutionSkill,
@@ -26,7 +28,6 @@ from python_agent.skills import (
 )
 from python_agent.controller import LLMInstructController
 from python_agent.evaluator import BasicEvaluatorWithSource
-from python_agent.llm_fallback import LLMFallback
 
 
 class AgentApp:
@@ -48,6 +49,26 @@ class AgentApp:
 
     def load_prompts(self):
         # Load prompts and prompt templates
+
+        self.fred_system_message = toml.load(
+            f"{self.work_dir}/prompts/fred_data_specialist.toml"
+        )["system"]["prompt"]
+
+        self.fred_prompt_template = Template(
+            toml.load(f"{self.work_dir}/prompts/fred_data_specialist.toml")["main"][
+                "prompt_template"
+            ]
+        )
+
+        self.data_scientist_system_message = toml.load(
+            f"{self.work_dir}/prompts/fred_data_scientist.toml"
+        )["system"]["prompt"]
+
+        self.data_scientist_prompt_template = Template(
+            toml.load(f"{self.work_dir}/prompts/fred_data_scientist.toml")["main"][
+                "prompt_template"
+            ]
+        )
 
         self.code_generation_system_message = toml.load(
             f"{self.work_dir}/prompts/python_code_generation.toml"
@@ -83,7 +104,38 @@ class AgentApp:
         """
         Optionally define the code_header.
         """
-        code_header = """"""
+        general_code_header = """"""
+        fred_code_header = """
+        from fredapi import Fred
+        import os
+        import pandas as pd
+        fred = Fred(api_key=os.getenv("FRED_API_KEY"))"""
+
+        data_scientist_code_header = """
+        import pandas as pd
+        from sklearn.preprocessing import StandardScaler
+        import matplotlib.pyplot as plt
+        """
+
+        """
+        FRED specialist.
+        """
+        self.fred_skill = FredDataSpecialist(
+            self.llm,
+            system_prompt=self.fred_system_message,
+            main_prompt_template=self.fred_prompt_template,
+            code_header=fred_code_header
+        )
+
+        """
+        Data Scientist
+        """
+        self.data_scientist_skill = FredDataScientistSkill(
+            self.llm,
+            system_prompt=self.fred_system_message,
+            main_prompt_template=self.fred_prompt_template,
+            code_header=data_scientist_code_header
+        )
 
         """
         Code generation.
@@ -92,7 +144,7 @@ class AgentApp:
             self.llm,
             system_prompt=self.code_generation_system_message,
             main_prompt_template=self.code_generation_prompt_template,
-            code_header=code_header,
+            code_header=general_code_header,
         )
 
         """
@@ -115,7 +167,7 @@ class AgentApp:
             self.llm,
             system_prompt=self.code_correction_system_message,
             main_prompt_template=self.code_correction_prompt_template,
-            code_header=code_header,
+            code_header=general_code_header,
         )
 
         """
@@ -133,9 +185,22 @@ class AgentApp:
         self.direct_to_user_skill = DirectToUserSkill()
 
     def init_chains(self):
+
+        self.fred_chain = Chain(
+            name="fred_data_specialist",
+            description="Identify and access economic datasets from the Federal Reserve Economic Database (FRED). Use this chain when you need to generate or edit code for accessing or downloading data from FRED.",
+            runners=[self.fred_skill, self.parse_python_skill]
+        )
+
+        self.data_scientist_chain = Chain(
+            name="data_scientist",
+            description="Write Python code related to data analysis and visualization, especially related to time series. Use this when you want to write code that will involve data analysis, manipulation, or plotting.",
+            runners=[self.data_scientist_skill, self.parse_python_skill]
+        )
+
         self.code_generation_chain = Chain(
             name="code_generation_chain",
-            description="Generate or edit Python code. If you intend to edit existing code, give an instruction to edit EXISTING CODE.",
+            description="Generate or edit general purpose Python code. If you intend to edit existing code, give an instruction to edit EXISTING CODE.",
             runners=[
                 self.code_generation_skill,
                 self.parse_python_skill,
@@ -174,7 +239,8 @@ class AgentApp:
             llm=self.llm,
             top_k_execution_plan=1,
             hints=[
-                "When you use the 'direct_to_user' chain, don't respond with instructions, but instead respond with a message that directly addresses the user."
+                "When you use the 'direct_to_user' chain, don't respond with instructions, but instead respond with a message that directly addresses the user.",
+                "When relevant, instruct chains to use matplotlib for plotting.",
             ],
         )
 
@@ -185,6 +251,8 @@ class AgentApp:
         self.agent = Agent(
             controller=self.controller,
             chains=[
+                self.fred_chain,
+                self.data_scientist_chain,
                 self.code_generation_chain,
                 self.code_execution_chain,
                 self.error_correction_chain,
