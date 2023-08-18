@@ -33,9 +33,7 @@ class AgentApp:
     def __init__(self, work_dir="./python_agent"):
         self.work_dir = work_dir
         self.context = AgentContext(chat_history=ChatHistory())
-        self.llm = LLMFallback(
-            OpenAILLM.from_env(), AzureLLM.from_env(), retry_before_fallback=1
-        )
+        self.llm = OpenAILLM.from_env()
         self.load_prompts()
         self.init_skills()
         self.init_chains()
@@ -44,6 +42,9 @@ class AgentApp:
         self.init_agent()
 
         self.state_history = []
+
+        self.controller._state["code"] = "No code to display."
+        self.controller._state["stderr"] = ""
 
     def load_prompts(self):
         # Load prompts and prompt templates

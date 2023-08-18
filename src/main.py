@@ -55,7 +55,7 @@ if __name__ == "__main__":
     test_case = [
         "I want to create a virtual pet cat in pygame",
         "run it",
-        "make the cat look nicer",
+        "make the cat look nicer - add as many visual features as you can think of!",
         "run it"
     ]
 

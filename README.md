@@ -14,7 +14,7 @@ If you just want to see how this Agent works, check out the following video wher
 
 ## Prerequisites
 
-To run the demo as-is, you'll need an [OpenAI API Key](https://platform.openai.com/account/org-settings). We also support the use of an Azure-based fallback LLM using gpt-3.5-turbo, but we highly recommend using GPT-4 for this demo. 
+To run the demo as-is, you'll need an [OpenAI API Key](https://platform.openai.com/account/org-settings). Though it's possible to use GPT 3.5 Turbo, we highly recommend using GPT-4 for this demo. 
 
 ## Council Components
 

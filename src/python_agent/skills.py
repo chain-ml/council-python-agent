@@ -197,12 +197,12 @@ class PythonExecutionSkill(SkillBase):
                     python_code = match
                 code = python_code
             else:
-                message = "Sorry, something went wrong and the code doesn't parse..."
+                message = "Sorry, something went wrong and the code doesn't parse...Do you want me to try to fix it?"
                 logger.debug(f"{self.name}, failed to parse code: {code}")
                 return ChatMessage.skill(
                     source=self.name,
                     message=message,
-                    data={"code": code},
+                    data=data | {"code": code},
                     is_error=True,
                 )
 

@@ -107,6 +107,4 @@ def revert_code():
 
 if __name__ == "__main__":
     agent_app = AgentApp()
-    agent_app.controller._state["code"] = "No code to display."
-    agent_app.controller._state["stderr"] = None
     app.run(debug=True, use_reloader=False, threaded=True)
