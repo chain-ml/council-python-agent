@@ -26,8 +26,6 @@ from python_agent.skills import (
 )
 from python_agent.controller import LLMInstructController
 from python_agent.evaluator import BasicEvaluatorWithSource
-from python_agent.llm_fallback import LLMFallback
-
 
 class AgentApp:
     def __init__(self, work_dir="./python_agent"):
@@ -174,7 +172,8 @@ class AgentApp:
             llm=self.llm,
             top_k_execution_plan=1,
             hints=[
-                "When you use the 'direct_to_user' chain, don't respond with instructions, but instead respond with a message that directly addresses the user."
+                "When you use the 'direct_to_user' chain, don't respond with instructions, but instead respond with a message that directly addresses the user.",
+                "Whenever graphical changes are being considered, always make sure you give instructions to draw graphics 'manually' in pygame. We can't load any external files and chains need to be reminded of this."
             ],
         )
 

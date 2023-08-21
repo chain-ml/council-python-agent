@@ -13,7 +13,7 @@ If present, always make sure the SOLUTION begins with the following code snippet
 $code_header
 
 ## EXISTING CODE
-If present and relevant, base your SOLUTION on the following code:
+Use the following code as the basis of your SOLUTION. Ensure that all of this code is part of your SOLUTION unless the user is specifcally asking for parts to be removed.
 ```python
 $existing_code
 ```
