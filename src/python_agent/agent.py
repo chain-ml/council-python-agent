@@ -173,7 +173,8 @@ class AgentApp:
             top_k_execution_plan=1,
             hints=[
                 "When you use the 'direct_to_user' chain, don't respond with instructions, but instead respond with a message that directly addresses the user.",
-                "Whenever graphical changes are being considered, always make sure you give instructions to draw graphics 'manually' in pygame. We can't load any external files and chains need to be reminded of this."
+                "Whenever graphical changes are being considered, always make sure you give instructions to draw graphics 'manually' in pygame."
+                "Always read all of the EXISTING CODE and the entire CONVERSATION HISTORY. Ensure that your instructions for code-related chains capture the user's intentions."
             ],
         )
 
