@@ -1,5 +1,5 @@
 from council.skills import SkillBase
-from council.contexts import ChatMessage, ChainContext
+from council.contexts import ChatMessage, SkillContext
 from council.runners import Budget
 from council.llm import LLMBase, LLMMessage
 
@@ -32,7 +32,7 @@ class PythonCodeGenerationSkill(SkillBase):
         self.main_prompt_template = main_prompt_template
         self.code_header = code_header
 
-    def execute(self, context: ChainContext, _budget: Budget) -> ChatMessage:
+    def execute(self, context: SkillContext, _budget: Budget) -> ChatMessage:
         """Execute `PythonCodeGenerationSkill`."""
 
         prompt = self.main_prompt_template.substitute(
@@ -62,7 +62,7 @@ class ParsePythonSkill(SkillBase):
     def __init__(self):
         super().__init__(name="ParsePythonSkill")
 
-    def execute(self, context: ChainContext, budget: Budget) -> ChatMessage:
+    def execute(self, context: SkillContext, budget: Budget) -> ChatMessage:
         # Get the code
         code = context.last_message.data["code"]
 
@@ -113,8 +113,7 @@ class PythonErrorCorrectionSkill(SkillBase):
         self.code_header = code_header
 
     def execute(
-        self, context: ChainContext, budget: Budget, num_retries=3
-    ) -> ChatMessage:
+        self, context: SkillContext, budget: Budget) -> ChatMessage:
         """
         Try to correct error(s) in Python code.
         """
@@ -122,7 +121,7 @@ class PythonErrorCorrectionSkill(SkillBase):
         # Get the instructions (which will be the 'message' from the controller)
         task = context.last_message.message
 
-        # Get the current chain context - the last item in the chainHistory
+        # Get the code
         code = context.last_message.data["code"]
 
         # Get the error(s)
@@ -145,7 +144,6 @@ class PythonErrorCorrectionSkill(SkillBase):
         llm_response = self.llm.post_chat_request(messages=messages_to_llm).first_choice
         logger.debug(f"{self.name}, corrected code: {llm_response}")
 
-        # Run the code and return the resulting message
         data = context.last_message.data | {
             "code": llm_response,
             "stdout": None,
@@ -169,12 +167,12 @@ class PythonExecutionSkill(SkillBase):
         self.llm = llm
         self.python_bin_dir = python_bin_dir
 
-    def execute(self, context: ChainContext, budget: Budget) -> ChatMessage:
+    def execute(self, context: SkillContext, budget: Budget) -> ChatMessage:
         """
         Try to execute a Python file, collecting output (or error message) from the standard output.
         """
 
-        # Get the current chain context - the last item in the chainHistory
+        # Get the code
         code = context.last_message.data["code"]
 
         # Run the code and return the resulting message
@@ -217,7 +215,7 @@ class PythonExecutionSkill(SkillBase):
                 "stderr": exec_result["stderr"],
             }
             if exec_result["returncode"] == 0:
-                logger.debug(f"{self.name}, executed code: {data}")
+                logger.debug(f"{self.name}, executed code: {code}")
                 message_to_user = f"The code executed successfully with standard output: {data['stdout'].strip()}"
                 if len(message_to_user) < 1:
                     message_to_user = (
@@ -227,7 +225,7 @@ class PythonExecutionSkill(SkillBase):
                     source=self.name, message=message_to_user, data=data, is_error=False
                 )
             else:
-                logger.debug(f"{self.name}, failed to execute code: {data}")
+                logger.debug(f"{self.name}, failed to execute code: {code}")
                 return ChatMessage.skill(
                     source=self.name,
                     message=f"Python code execution failed. There was an error: {data['stderr'][:100]}... Do you want me to try to fix it?",
@@ -266,7 +264,7 @@ class GeneralSkill(SkillBase):
         self.system_prompt = LLMMessage.system_message(system_prompt)
         self.main_prompt_template = main_prompt_template
 
-    def execute(self, context: ChainContext, _budget: Budget) -> ChatMessage:
+    def execute(self, context: SkillContext, _budget: Budget) -> ChatMessage:
         """Execute `GeneralSkill`."""
 
         prompt = self.main_prompt_template.substitute(
@@ -296,7 +294,7 @@ class DirectToUserSkill(SkillBase):
 
         super().__init__(name="DirectToUserSkill")
 
-    def execute(self, context: ChainContext, _budget: Budget) -> ChatMessage:
+    def execute(self, context: SkillContext, _budget: Budget) -> ChatMessage:
         """Execute `DirectToUserSkill`."""
 
         message = context.last_message.message
