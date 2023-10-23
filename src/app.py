@@ -107,4 +107,4 @@ def revert_code():
 
 if __name__ == "__main__":
     agent_app = AgentApp()
-    app.run(debug=True, use_reloader=False, threaded=True)
+    app.run(debug=True, use_reloader=False, threaded=True, port=5010)

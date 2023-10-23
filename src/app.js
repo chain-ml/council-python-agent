@@ -13,14 +13,14 @@ document.addEventListener('DOMContentLoaded', function () {
     lineWrapping: true,
   });
 
-  fetch('http://127.0.0.1:5000/reset', {
+  fetch('http://127.0.0.1:5010/reset', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: ''
   }).then(result => {
-    fetch('http://127.0.0.1:5000/get_code', {
+    fetch('http://127.0.0.1:5010/get_code', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Event listener for executing the code
   function revertCode() {
 
-    fetch('http://127.0.0.1:5000/revert_code', {
+    fetch('http://127.0.0.1:5010/revert_code', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Post the code in the editor to the server first
     var code = editor.getValue(); // Assuming you have an initialized CodeMirror editor
 
-    fetch('http://127.0.0.1:5000/post_code', {
+    fetch('http://127.0.0.1:5010/post_code', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function () {
       messageInput.value = ''; // Clear the input field
 
       // Send the user message to the server
-      fetch('http://127.0.0.1:5000/handle_user_message', {
+      fetch('http://127.0.0.1:5010/handle_user_message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  const logsSource = new EventSource('http://127.0.0.1:5000/latest_log_stream');
+  const logsSource = new EventSource('http://127.0.0.1:5010/latest_log_stream');
 
   logsSource.onmessage = function (event) {
     // Update the UI with the latest log message
